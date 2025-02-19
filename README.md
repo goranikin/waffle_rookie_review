@@ -1,5 +1,8 @@
 ## My review repository for Rookie and Toy project at Waffle Studio
 
+1: setup dev environment https://hyeokrani.tistory.com/112
+
+
 I use Bun for package manager.
 
 First, run the development server:
