@@ -9,6 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.bun/
 
 # testing
 /coverage
@@ -39,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Environment variables
+.env.local
+.env.development.local
+.env.production.local
+
+# Bun cache
+.cache/
