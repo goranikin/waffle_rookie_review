@@ -1,13 +1,42 @@
-'use client'
+import {createServerSideClient} from "@/util/supabase/server";
+import {PostgrestError} from "@supabase/supabase-js";
 
-import { useRouter } from 'next/navigation';
+type TestResponse = {
+  id: number;
+  created_at: number;
+  contents: string;
+}
 
-export const MainPage = () => {
-  const router = useRouter();
+export const MainPage = async () => {
+  
+  const supabase = await createServerSideClient()
+  
+  const {
+    data: dataList,
+    error,
+  }: {
+    data: TestResponse[] | null;
+    error: PostgrestError | null;
+  } = await supabase.from("TestTable").select("*");
+  
+  if (error) {
+    console.log(error);
+    return <div>Error loading data</div>
+  }
+  
+  if (dataList === null) return (<div>Data are null.</div>)
+  
   return (
     <div>
-      <p>메인페이지 입니다.</p>
-      <button type="button" onClick={()=> router.push('/')}>랜딩페이지로 이동</button>
+      <p>{dataList.map((data)=>{
+        return (
+          <div key={data.id}>
+            <p>id: {data.id}</p>
+            <p>created_at: {data.created_at}</p>
+            <p>contents: {data.contents}</p>
+          </div>
+        )
+      })}</p>
     </div>
   );
 };
