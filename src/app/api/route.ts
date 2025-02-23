@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import { NextRequest, NextResponse } from 'next/server';
 
 const Bucket = process.env.AMPLIFY_BUCKET as string;
@@ -15,7 +15,7 @@ export const POST = async (req: NextRequest) => {
   const file = form.get('image') as File;
 
   if (!file || file.size === 0) {
-    return new Response('No file uploaded', { status: 404 });
+    return NextResponse.json('No file uploaded', { status: 404 });
   }
 
   const buffer = await file.arrayBuffer();
@@ -33,3 +33,43 @@ export const POST = async (req: NextRequest) => {
 
   return NextResponse.json({ url }, { status: 200 });
 };
+
+export const GET = async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const key = searchParams.get("key");
+  
+  if (!key) {
+    return NextResponse.json({ error: "Missing 'key' parameter" }, { status: 400 });
+  }
+  
+  const fileParams = {
+    Bucket: Bucket,
+    Key: key,
+  }
+  
+  const s3Response = await s3.send(new GetObjectCommand(fileParams));
+  
+  const stream = s3Response.Body as ReadableStream;
+  const headers = new Headers();
+  headers.set("Content-Type", s3Response.ContentType || "application/octet-stream");
+  
+  return new NextResponse(stream, { headers });
+};
+
+export const DELETE = async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const key = searchParams.get("key");
+  
+  if (!key) {
+    return NextResponse.json({ error: "Missing 'key' parameter" }, { status: 400 });
+  }
+  
+  const fileParams = {
+    Bucket: Bucket,
+    Key: key,
+  }
+  
+  await s3.send(new DeleteObjectCommand(fileParams))
+  
+  return NextResponse.json({ status: 200 });
+}
