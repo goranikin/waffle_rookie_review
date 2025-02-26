@@ -24,7 +24,7 @@ jobs:
       - name: Setup Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
-          echo "::add-path::$(bun bin)" # Add Bun to PATH
+          echo "::add-path::$(bun bin)"
 
       - name: Install dependencies
         run: bun install
