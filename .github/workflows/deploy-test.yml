@@ -6,9 +6,9 @@ on:
       - main
 
 env:
-  S3_BUCKET_NAME: chagok-bucket
-  CODE_DEPLOY_APPLICATION_NAME: chagok-code-deploy
-  CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: chagok
+  S3_BUCKET_NAME: rookie-review-ci-cd
+  CODE_DEPLOY_APPLICATION_NAME: rookie_review_test_code_deploy
+  CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: test-group
 
 jobs:
   build:
@@ -20,21 +20,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+
+      - name: Setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "::add-path::$(bun bin)" # Add Bun to PATH
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
-      # 프로젝트 빌드
+      # Build the project using Bun
       - name: Build next app
-        run: npm run build
+        run: bun run build
 
 	  # 프로젝트 압축
       - name: Make zip file
-        run: zip -qq -r ./chagok.zip . -x "node_modules/*"
+        run: zip -qq -r ./rookie_review.zip . -x "node_modules/*"
         # -qq: quit 모드로 실행 (에러나 경고메세지만 출력하도록 함)
         # -r: 지정된 디렉토리를 재귀적으로 압축 (하위 디렉토리와 파일들 모두 압축)
         # -x "node_modules/*": node_modules 폴더 제외
@@ -49,7 +50,7 @@ jobs:
 
       # 압축된 파일을 S3에 업로드
       - name: Upload to S3
-        run: aws s3 cp --region ap-northeast-2 ./chagok.zip s3://$S3_BUCKET_NAME/chagok.zip
+        run: aws s3 cp --region ap-northeast-2 ./rookie_review.zip s3://$S3_BUCKET_NAME/rookie_review.zip
 
       # S3에 업로드 된 빌드 파일을 이용해 CodeDeploy가 정의된 동작을 하도록 트리거
       - name: Code Deploy
@@ -58,4 +59,4 @@ jobs:
           --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
           --deployment-config-name CodeDeployDefault.AllAtOnce \
           --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
-          --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=chagok.zip
+          --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=rookie_review.zip
