@@ -17,3 +17,4 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "이 작업의 상태는 ${{ job.status }}입니다."
+      - run: echo "테스트123"
