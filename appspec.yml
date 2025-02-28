@@ -4,7 +4,7 @@ os: linux
 files:
   - source: /
     destination: /home/ubuntu/waffle_rookie_review
-    overwrite: yes
+    overwrite: true
 permissions:
   - object: /home/ubuntu/waffle_rookie_review
     owner: ubuntu
