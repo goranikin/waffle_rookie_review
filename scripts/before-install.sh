@@ -1,8 +1,19 @@
 #!/bin/bash
 
-# 기존 애플리케이션 디렉터리 삭제
-echo "Cleaning up existing application files..."
-rm -rf /home/ubuntu/waffle_rookie_review/*
+set -e  # 에러 발생 시 스크립트 중단
 
-# 필요한 디렉터리가 없을 경우 다시 생성
-mkdir -p /home/ubuntu/waffle_rookie_review
+echo "Cleaning up existing application files..."
+
+if rm -rf /home/ubuntu/waffle_rookie_review/*; then
+  echo "Old files removed successfully."
+else
+  echo "Failed to remove old files." >&2
+  exit 1
+fi
+
+if mkdir -p /home/ubuntu/waffle_rookie_review; then
+  echo "Directory created successfully."
+else
+  echo "Failed to create directory." >&2
+  exit 1
+fi
