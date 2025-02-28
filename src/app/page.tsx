@@ -35,6 +35,7 @@ export default function Home() {
       <button type="button" onClick={() => router.push('/test')}>
         테스트페이지로 이동
       </button>
+      <p>테스트메시지!</p>
       <div>
         {postList.map((post) => {
           return (
