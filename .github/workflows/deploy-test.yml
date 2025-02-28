@@ -59,7 +59,7 @@ jobs:
 
       # 압축된 파일을 S3에 업로드
       - name: Upload to S3
-        run: aws s3 cp --region ap-northeast-2 ./rookie_review.zip s3://$S3_BUCKET_NAME/rookie_review.zip
+        run: aws s3 cp --region ap-northeast-2 ./rookie_review.zip s3://${{ env.S3_BUCKET_NAME }}/rookie_review.zip
         # aws s3 cp: AWS CLI 명령어로 파일 복사
         # --region ap-northeast-2: 업로드 대상 리전 설정
         # 파일을 S3 버킷의 루트 디렉토리에 업로드.
