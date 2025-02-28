@@ -23,7 +23,7 @@ export default function Home() {
     .catch((error) => console.log(error));
 
   if (postList === undefined || postList === null) {
-    return <div>데이터를 불러오는데 실패했습니다.</div>;
+    return <div>아무튼 실패.</div>;
   }
 
   return (
