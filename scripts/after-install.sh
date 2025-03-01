@@ -2,40 +2,16 @@
 
 echo "> After install script started"
 
-# Check if bun is installed
-if ! command -v bun &>/dev/null; then
-  echo "Error: 'bun' is not installed. Installing bun..."
-  curl -fsSL https://bun.sh/install | bash || {
-    echo "Error: Failed to install 'bun'."
+# Restore .env.local file from backup directory
+if [ -f "/home/ubuntu/env-backup/.env.local" ]; then
+  echo "> Restoring .env.local file..."
+  cp /home/ubuntu/env-backup/.env.local /home/ubuntu/waffle_rookie_review/.env.local || {
+    echo "Error: Failed to restore .env.local file."
     exit 1
   }
-
-  # Apply environment variables for bun (ensure it's available for this session)
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
+else
+  echo "Warning: No backup .env.local file found. Skipping restoration."
 fi
-
-echo "> Bun version: $(bun --version)"
-
-# Navigate to the project directory
-cd /home/ubuntu/waffle_rookie_review || {
-  echo "Error: Failed to navigate to project directory."
-  exit 1
-}
-
-# Install dependencies using bun
-echo "> Installing dependencies using bun..."
-bun install || {
-  echo "Error: Failed to install dependencies."
-  exit 1
-}
-
-# Build the application using bun
-echo "> Building the application..."
-bun build || {
-  echo "Error: Failed to build the application."
-  exit 1
-}
 
 # Restart PM2 process
 if command -v pm2 &>/dev/null; then
