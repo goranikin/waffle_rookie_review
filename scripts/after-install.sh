@@ -16,4 +16,4 @@ cd $REPOSITORY || {
   exit 1
 }
 
-$BUN_PATH deploy
+$BUN_PATH run deploy
