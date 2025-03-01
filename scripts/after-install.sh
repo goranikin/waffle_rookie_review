@@ -20,6 +20,15 @@ else
   exit 1
 fi
 
+# 애플리케이션 빌드
+echo "> Building the application..."
+bun build || {
+  echo "Error: Failed to build the application."
+  exit 1
+}
+
+sleep 1
+
 # PM2 프로세스 재시작
 if command -v pm2 >/dev/null 2>&1; then
   echo "> Restarting PM2 process..."
