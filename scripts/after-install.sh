@@ -1,6 +1,8 @@
 REPOSITORY=/home/ubuntu/waffle_rookie_review
 BUN_PATH=/home/ubuntu/.bun/bin/bun
 
+wait 1
+
 if [ -f "/home/ubuntu/env-backup/.env.local" ]; then
   echo "> Restoring .env.local file..."
   cp /home/ubuntu/env-backup/.env.local /home/ubuntu/waffle_rookie_review/.env.local || {

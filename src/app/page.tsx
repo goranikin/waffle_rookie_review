@@ -29,7 +29,7 @@ export default function Home() {
   return (
     <div>
       <p>랜딩페이지 입니다.</p>
-      <p>제발되게해주세요</p>
+      <p>test</p>
       <button type="button" onClick={() => router.push('/main')}>
         메인페이지로 이동
       </button>
