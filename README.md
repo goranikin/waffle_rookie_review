@@ -5,3 +5,4 @@
 3: create page for uploading image to AWS S3 https://hyeokrani.tistory.com/114  
 4: make api for get, delete from S3 bucket https://hyeokrani.tistory.com/115  
 5: distribute app using AWS EC2 https://hyeokrani.tistory.com/116
+6: YAML 문법과 Github actions 배우기! https://hyeokrani.tistory.com/117

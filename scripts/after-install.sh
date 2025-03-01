@@ -9,6 +9,6 @@ cd /home/ubuntu/waffle_rookie_review || exit
 bun install
 
 # Restart the PM2 process
-pm2 restart next-app
+pm2 restart 0
 
 echo "> After install script completed"
