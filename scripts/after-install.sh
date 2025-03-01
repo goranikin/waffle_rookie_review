@@ -2,37 +2,45 @@
 
 echo "> After install script started"
 
-# 프로젝트 디렉토리로 이동
+# Check if bun is installed
+if ! command -v bun &>/dev/null; then
+  echo "Error: 'bun' is not installed. Installing bun..."
+  curl -fsSL https://bun.sh/install | bash || {
+    echo "Error: Failed to install 'bun'."
+    exit 1
+  }
+
+  # Apply environment variables for bun (ensure it's available for this session)
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+fi
+
+echo "> Bun version: $(bun --version)"
+
+# Navigate to the project directory
 cd /home/ubuntu/waffle_rookie_review || {
   echo "Error: Failed to navigate to project directory."
   exit 1
 }
 
-# 의존성 설치 (bun이 설치되어 있어야 함)
-if command -v bun >/dev/null 2>&1; then
-  echo "> Installing dependencies using bun..."
-  bun install || {
-    echo "Error: Failed to install dependencies."
-    exit 1
-  }
-else
-  echo "Error: 'bun' is not installed. Please install bun first."
+# Install dependencies using bun
+echo "> Installing dependencies using bun..."
+bun install || {
+  echo "Error: Failed to install dependencies."
   exit 1
-fi
+}
 
-# 애플리케이션 빌드
+# Build the application using bun
 echo "> Building the application..."
 bun build || {
   echo "Error: Failed to build the application."
   exit 1
 }
 
-sleep 1
-
-# PM2 프로세스 재시작
-if command -v pm2 >/dev/null 2>&1; then
+# Restart PM2 process
+if command -v pm2 &>/dev/null; then
   echo "> Restarting PM2 process..."
-  pm2 restart 0 || {
+  pm2 restart next-app --update-env || {
     echo "Error: Failed to restart PM2 process."
     exit 1
   }
