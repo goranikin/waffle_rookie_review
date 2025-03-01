@@ -1,4 +1,5 @@
 REPOSITORY=/home/ubuntu/waffle_rookie_review
+BUN_PATH=/home/ubuntu/.bun/bin/bun
 
 if [ -f "/home/ubuntu/env-backup/.env.local" ]; then
   echo "> Restoring .env.local file..."
@@ -15,4 +16,4 @@ cd $REPOSITORY || {
   exit 1
 }
 
-bun deploy
+$BUN_PATH deploy
