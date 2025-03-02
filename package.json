@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "check": "prettier --check .",
-    "fix": "prettier --write .",
-    "deploy": "pm2 start ecosystem.config.js --env production"
+    "fix": "prettier --write ."
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
