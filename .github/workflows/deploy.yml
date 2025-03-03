@@ -1,0 +1,69 @@
+name: deploy to S3
+
+# main 브랜치로 push 할 때 workflow 실행
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 환경 변수 설정
+env:
+  S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+  CODE_DEPLOY_APPLICATION_NAME: ${{ secrets.CODE_DEPLOY_APPLICATION_NAME }}
+  CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: ${{ secrets.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 레포지토리 clone
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bun 설치 및 관련 환경 변수 설정
+      - name: Setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "BUN_INSTALL=$HOME/.bun" >> $GITHUB_ENV
+          echo "PATH=$HOME/.bun/bin:$PATH" >> $GITHUB_ENV
+
+      # 프로젝트 의존성 설치
+      - name: Install dependencies
+        run: bun install
+
+      # Next.js 앱 빌드
+      - name: Build next app
+        run: bun run build
+
+      # 빌드한 파일과 프로젝트 소스를 압축해 .zip 파일로 만들기
+      - name: Make zip file
+        run: zip -qq -r ./rookie_review.zip . -x ".git/*"
+        # -qq: quit 모드로 실행 (에러나 경고메세지만 출력하도록 함)
+        # -r: 지정된 디렉토리를 재귀적으로 압축 (하위 디렉토리와 파일들 모두 압축)
+        # -x: 지정한 파일들 압축 과정에서 제외하기
+
+      # Github Action에서 AWS의 권한 자격을 얻어오는 단계
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.REGION }}
+
+      # 압축된 파일을 S3에 업로드
+      - name: Upload to S3
+        run: aws s3 cp --region ap-northeast-2 ./rookie_review.zip s3://${{ env.S3_BUCKET_NAME }}/rookie_review.zip
+        # aws s3 cp: AWS CLI 명령어로 파일 복사
+        # --region ap-northeast-2: 업로드 대상 리전 설정
+        # 파일을 S3 버킷의 루트 디렉토리에 업로드.
+
+      # S3에 업로드 된 빌드 파일을 이용해 CodeDeploy가 정의된 동작을 하도록 트리거
+      - name: Code Deploy
+        run: |
+          aws deploy create-deployment \
+          --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
+          --deployment-config-name CodeDeployDefault.AllAtOnce \
+          --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+          --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=rookie_review.zip
