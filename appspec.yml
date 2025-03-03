@@ -1,0 +1,17 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ubuntu/waffle_rookie_review
+    overwrite: yes
+permissions:
+  - object: /home/ubuntu/waffle_rookie_review
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+hooks:
+  AfterInstall:
+    - location: scripts/after-install.sh
+      timeout: 300
+      runas: ubuntu
