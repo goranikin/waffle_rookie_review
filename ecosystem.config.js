@@ -9,8 +9,10 @@ module.exports = {
       autorestart: true, // 프로세스 자동 재시작 활성화
       watch: true, // 파일 변경 감지 활성화 (개발 중에만 활용)
       max_memory_restart: '1G', // 1GB 이상 메모리 사용 시 재시작
+      interpreter: '~/.bun/bin/bun',
       env: {
-        NODE_ENV: 'production', // Node.js 환경 설정
+        NODE_ENV: 'production', // Node.js 환경 변수
+        PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`,
       },
     },
   ],
