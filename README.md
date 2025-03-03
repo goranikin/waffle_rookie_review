@@ -7,3 +7,6 @@
 5: distribute app using AWS EC2 https://hyeokrani.tistory.com/116  
 6: YAML 문법과 Github actions 배우기! https://hyeokrani.tistory.com/117  
 7: nginx configuration and CD https://hyeokrani.tistory.com/118
+
+배포 복습하기 - EC2, nginx, pm2: https://hyeokrani.tistory.com/119  
+배포 복습하기 - GitHub Actions, CodeDeploy, Bun: https://hyeokrani.tistory.com/120
