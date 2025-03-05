@@ -20,6 +20,7 @@ export default async function PostPage({ params }: Props) {
     <div>
       <p>{post.title}</p>
       <p>{post.publishDate}</p>
+      <p>test</p>
     </div>
   );
 }
