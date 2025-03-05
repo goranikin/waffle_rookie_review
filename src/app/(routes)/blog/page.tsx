@@ -1,7 +1,7 @@
 import { getPostList } from '@/util/post';
 import { PostList } from '@/components/postList';
 
-export default async function BlogPage() {
+export default async function BlogListPage() {
   const postLIst = await getPostList();
 
   return (
