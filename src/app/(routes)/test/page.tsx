@@ -1,4 +1,4 @@
-import { TestPage } from '@/app/_pages/TestPage';
+import { TestPage } from '@/app/(routes)/test/TestPage';
 
 export default function TestPageRoute() {
   return <TestPage />;

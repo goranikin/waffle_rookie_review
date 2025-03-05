@@ -7,13 +7,13 @@ export type Post = {
 }
 
 export const getPostList= async (): Promise<Post[]>  => {
-  const slugs = (await readdir('src/app/(routes)/blog', { withFileTypes: true })).filter((dirent) =>
+  const slugs = (await readdir('src/app/contents/blog', { withFileTypes: true })).filter((dirent) =>
     dirent.isDirectory(),
   );
 
   const postList = await Promise.all(
     slugs.map(async ({name}) => {
-      const { metadata } = await import(`@/app/(routes)/blog/${name}/page.mdx`);
+      const { metadata } = await import(`@/app/contents/blog/${name}/page.mdx`);
       return { slug: name, ...metadata };
     })
   );

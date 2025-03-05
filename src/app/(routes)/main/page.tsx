@@ -1,4 +1,4 @@
-import { MainPage } from '@/app/_pages/MainPage/MainPage';
+import { MainPage } from '@/app/(routes)/main/MainPage';
 
 export default function MainPageRoute() {
   return <MainPage />;

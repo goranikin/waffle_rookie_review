@@ -27,7 +27,6 @@ export const MainPage = async () => {
 
   return (
     <div>
-      <p>
         {dataList.map((data) => {
           return (
             <div key={data.id}>
@@ -37,7 +36,6 @@ export const MainPage = async () => {
             </div>
           );
         })}
-      </p>
     </div>
   );
 };
