@@ -16,4 +16,4 @@ export const PostList = ({ postList }: { postList: Post[] }) => {
       ))}
     </ol>
   );
-}
+};

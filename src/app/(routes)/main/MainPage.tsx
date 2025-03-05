@@ -27,15 +27,15 @@ export const MainPage = async () => {
 
   return (
     <div>
-        {dataList.map((data) => {
-          return (
-            <div key={data.id}>
-              <p>id: {data.id}</p>
-              <p>created_at: {data.created_at}</p>
-              <p>contents: {data.contents}</p>
-            </div>
-          );
-        })}
+      {dataList.map((data) => {
+        return (
+          <div key={data.id}>
+            <p>id: {data.id}</p>
+            <p>created_at: {data.created_at}</p>
+            <p>contents: {data.contents}</p>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -10,4 +10,4 @@ export default async function BlogPage() {
       <PostList postList={postLIst} />
     </main>
   );
-};
+}
