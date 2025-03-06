@@ -10,6 +10,7 @@ type Props = {
 export default async function PostPage({ params }: Props) {
   const postList = await getPostList();
   const slug = (await params).slug;
+
   const post = getPostBySlug({ slug, postList });
 
   if (!post) {

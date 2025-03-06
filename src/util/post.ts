@@ -10,7 +10,7 @@ export const getPostList = async (): Promise<Post[]> => {
   const fileList = (await readdir('src/app/contents/blog', { withFileTypes: true })).filter(
     (dirent) => dirent.isFile() && dirent.name.endsWith('.mdx'),
   );
-  
+
   const postList = await Promise.all(
     fileList.map(async (file) => {
       const slug = file.name.replace(/\.mdx$/, '');
@@ -18,7 +18,6 @@ export const getPostList = async (): Promise<Post[]> => {
       return { slug, ...metadata };
     }),
   );
-
   postList.sort((a, b) => +new Date(b.publishDate) - +new Date(a.publishDate));
 
   return postList;
