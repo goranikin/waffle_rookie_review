@@ -21,7 +21,7 @@ export default async function PostPage({ params }: Props) {
     <PageLayout>
       <div className="flex flex-col mt-5 gap-2">
         <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
-        <div className="prose">
+        <div className="prose max-w-full">
           <post.content />
         </div>
       </div>
