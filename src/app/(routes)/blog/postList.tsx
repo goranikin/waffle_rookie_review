@@ -1,4 +1,4 @@
-import { type Post } from '@/util/post';
+import { type Post } from '@/utils/post';
 import Link from 'next/link';
 
 export const PostList = ({ postList }: { postList: Post[] }) => {

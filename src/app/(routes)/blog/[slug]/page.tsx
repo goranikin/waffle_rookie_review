@@ -1,5 +1,6 @@
-import { getPostBySlug } from '@/util/post';
+import { getPostBySlug } from '@/utils/post';
 import { notFound } from 'next/navigation';
+import PageLayout from '@/components/pageLayout';
 
 type Props = {
   params: Promise<{
@@ -17,12 +18,13 @@ export default async function PostPage({ params }: Props) {
   }
 
   return (
-    <div className="flex flex-col mt-5 gap-2">
-      <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
-      <div className="prose">
-        {/* Render the MDX content */}
-        <post.content />
+    <PageLayout>
+      <div className="flex flex-col mt-5 gap-2">
+        <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
+        <div className="prose max-w-full">
+          <post.content />
+        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
