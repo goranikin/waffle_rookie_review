@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Next.js (Bun) 앱 배포하기 - EC2, nginx, pm2',
-  description: 'Next.js와 Bun으로 만든 애플리케이션을 배포합니다. Vercel이 아닌 AWS의 EC2를 이용하고, nginx와 pm2를 통해 서버를 관리합니다.',
+  description:
+    'Next.js와 Bun으로 만든 애플리케이션을 배포합니다. Vercel이 아닌 AWS의 EC2를 이용하고, nginx와 pm2를 통해 서버를 관리합니다.',
   publishDate: '2025-03-02T21:13:00Z',
 };
 
@@ -13,7 +14,6 @@ export const metadata = {
 먹고 산다는 것에 대한 지난 날의 고민들은 학기 중에 글로 남길 계획!
 
 ---
-
 
 Next.js로 작성한 앱을 AWS EC2로 배포하는 방법은 쉽게 찾아볼 수 있다.
 문제는 대부분이 나처럼 공부하며 정리한 글이다보니 온전히 신뢰하기 어렵다는 점.
@@ -166,11 +166,7 @@ server {
 sudo ln -s /etc/nginx/sites-available/waffle_rookie_review.conf /etc/nginx/sites-enabled/
 ```
 
-
-
 설정 후 심볼릭 링크까지 생성해주면 끝.
-
-
 
 설정의 의미는 다음과 같다.
 
@@ -180,15 +176,11 @@ sudo ln -s /etc/nginx/sites-available/waffle_rookie_review.conf /etc/nginx/sites
 
 포트 번호 80은 HTTP의 기본 포트다. 따라서 `http://<IPv4 주소>` 로 요청을 보내면 이 서버 블록이 활성화된다.
 
-
-
 `location /` -> '/' 경로(루트 경로)에 대한 요청을 처리한다.
 
 `proxy_pass http://localhost:3000` -> `http://<IPv4 주소>/` 요청을 Next.js 서버로 전달한다.
 
 이 외에는 서버단에서 요청을 처리하는데 쓰이는 세부적인 설정들이다.
-
-
 
 설정 파일의 문법이 올바른지 테스트해보자.
 
@@ -245,14 +237,14 @@ nvm install --lts
 이모저모
 
 1. EC2 인스턴스에 지정된 퍼블릭 IPv4 주소는 인스턴스를 재부팅하면 새롭게 할당받는다.
-그래서 고정적인 IPv4 주소를 얻으려면 Elastic IP를 할당받으면 된다.
+   그래서 고정적인 IPv4 주소를 얻으려면 Elastic IP를 할당받으면 된다.
 
 2. Bun 명령어로 실행은 했지만, 런타임 환경이 Bun인 걸 좀 더 확실하게 확인할 수 있을까?
-인스턴스에서 명령어 `pm2 describe <app-name>`을 실행하면 `script path: /home/ubuntu/.bun/bin/bun` 으로 지정된 걸 볼 수 있다.
-더 나아가 node.js version이 N/A로 현재 런타임 환경이 node.js 가 아님을 알 수 있다!
+   인스턴스에서 명령어 `pm2 describe <app-name>`을 실행하면 `script path: /home/ubuntu/.bun/bin/bun` 으로 지정된 걸 볼 수 있다.
+   더 나아가 node.js version이 N/A로 현재 런타임 환경이 node.js 가 아님을 알 수 있다!
 
 3. vim editor를 처음 만났을 때 매우 당황스러웠다.
-나가는 법을 몰라 터미널을 강제 종료했던 과거의 나... 이제야 CLI 기반으로 컴퓨터를 다루는 게 익숙해진 느낌이다.
+   나가는 법을 몰라 터미널을 강제 종료했던 과거의 나... 이제야 CLI 기반으로 컴퓨터를 다루는 게 익숙해진 느낌이다.
 
 ---
 

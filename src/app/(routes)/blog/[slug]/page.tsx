@@ -1,6 +1,6 @@
 import { getPostBySlug } from '@/utils/post';
 import { notFound } from 'next/navigation';
-import PageLayout from "@/components/pageLayout";
+import PageLayout from '@/components/pageLayout';
 
 type Props = {
   params: Promise<{
