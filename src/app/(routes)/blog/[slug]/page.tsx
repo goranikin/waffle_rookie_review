@@ -1,4 +1,4 @@
-import { getPostBySlug, getPostList } from '@/util/post';
+import { getPostBySlug } from '@/util/post';
 import { notFound } from 'next/navigation';
 
 type Props = {
@@ -8,20 +8,21 @@ type Props = {
 };
 
 export default async function PostPage({ params }: Props) {
-  const postList = await getPostList();
   const slug = (await params).slug;
 
-  const post = getPostBySlug({ slug, postList });
+  const post = await getPostBySlug({ slug });
 
   if (!post) {
     notFound();
   }
 
   return (
-    <div>
-      <p>{post.title}</p>
-      <p>{post.publishDate}</p>
-      <p>test</p>
+    <div className="flex flex-col mt-5 gap-2">
+      <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
+      <div className="prose">
+        {/* Render the MDX content */}
+        <post.content />
+      </div>
     </div>
   );
 }
