@@ -15,7 +15,7 @@ export default async function PostPage({ params }: Props) {
   if (!post) {
     notFound();
   }
-  
+
   return (
     <div className="flex flex-col mt-5 gap-2">
       <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
