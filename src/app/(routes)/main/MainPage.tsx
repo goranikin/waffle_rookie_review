@@ -1,4 +1,4 @@
-import { createServerSideClient } from '@/util/supabase/server';
+import { createServerSideClient } from '@/utils/supabase/server';
 import { PostgrestError } from '@supabase/supabase-js';
 
 type TestResponse = {

@@ -1,4 +1,4 @@
-import { getPostBySlug } from '@/util/post';
+import { getPostBySlug } from '@/utils/post';
 import { notFound } from 'next/navigation';
 import PageLayout from "@/components/pageLayout";
 

@@ -1,4 +1,4 @@
-import { getPostList, Post } from '@/util/post';
+import { getPostList, Post } from '@/utils/post';
 import PageLayout from '@/components/pageLayout';
 import Link from 'next/link';
 
