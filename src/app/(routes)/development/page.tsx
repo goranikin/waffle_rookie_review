@@ -6,7 +6,7 @@ export default async function BlogListPage() {
   const postList = await getPostList();
 
   return (
-    <PageLayout title="블로그" description="개발 기록을 위한 공간">
+    <PageLayout title="Development" description="개발 기록을 위한 공간">
       <div>
         {postList.map((post: Post) => {
           const date = new Date(post.publishDate);
