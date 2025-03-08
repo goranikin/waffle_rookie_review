@@ -1,10 +1,16 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/header';
+import localFont from 'next/font/local';
 
 export const metadata: Metadata = {
   title: 'Hyeok-Blog',
 };
+
+const pretendard = localFont({
+  src: '../../public/fonts/PretendardVariable.woff2',
+  display: 'swap',
+});
 
 export default function RootLayout({
   children,
@@ -12,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ko" className={`${pretendard.className}`}>
       <body className="max-w-screen-md min-w-[320px] mx-auto">
         <main className="flex flex-col">
           <Header />
