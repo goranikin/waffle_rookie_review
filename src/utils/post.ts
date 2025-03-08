@@ -33,6 +33,7 @@ export const getPostBySlug: ({ slug }: { slug: string }) => Promise<Post> = asyn
   const file = (await readdir(postDataDirectoryPath, { withFileTypes: true })).find(
     (dirent) => dirent.isFile() && dirent.name === `${slug}.mdx`,
   );
+  
   if (!file) throw new Error('No post found for slug');
 
   const { default: Content, metadata } = await import(`@/app/contents/blog/${file.name}`);

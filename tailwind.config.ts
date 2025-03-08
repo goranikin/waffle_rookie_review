@@ -11,6 +11,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        pretendard: ['var(--font-pretendard)'],
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -51,6 +54,11 @@ export default {
           '3': 'hsl(var(--chart-3))',
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
+        },
+        tillGreen: {
+          100: '#C6E2B5', // 밝은 Till Green
+          500: '#228B22', // 기본 Till Green
+          900: '#1A5C37', // 어두운 Till Green
         },
       },
       borderRadius: {
