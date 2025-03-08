@@ -9,7 +9,7 @@ export type Post = {
 };
 
 export const getPostList = async (): Promise<Post[]> => {
-  const postDataDirectoryPath = 'src/app/contents/blog';
+  const postDataDirectoryPath = 'src/app/contents/development';
 
   const fileList = (await readdir(postDataDirectoryPath, { withFileTypes: true })).filter(
     (dirent) => dirent.isFile() && dirent.name.endsWith('.mdx'),
@@ -18,7 +18,7 @@ export const getPostList = async (): Promise<Post[]> => {
   const postList = await Promise.all(
     fileList.map(async (file) => {
       const slug = file.name.replace(/\.mdx$/, '');
-      const { metadata } = await import(`@/app/contents/blog/${file.name}`);
+      const { metadata } = await import(`@/app/contents/development/${file.name}`);
       return { slug, ...metadata };
     }),
   );
@@ -29,13 +29,13 @@ export const getPostList = async (): Promise<Post[]> => {
 };
 
 export const getPostBySlug: ({ slug }: { slug: string }) => Promise<Post> = async ({ slug }: { slug: string }) => {
-  const postDataDirectoryPath = 'src/app/contents/blog';
+  const postDataDirectoryPath = 'src/app/contents/development';
   const file = (await readdir(postDataDirectoryPath, { withFileTypes: true })).find(
     (dirent) => dirent.isFile() && dirent.name === `${slug}.mdx`,
   );
   if (!file) throw new Error('No post found for slug');
 
-  const { default: Content, metadata } = await import(`@/app/contents/blog/${file.name}`);
+  const { default: Content, metadata } = await import(`@/app/contents/development/${file.name}`);
 
   return {
     slug,

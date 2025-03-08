@@ -15,7 +15,7 @@ export default async function BlogListPage() {
           const day = date.getDate();
           return (
             <Link
-              href={`/blog/${post.slug}`}
+              href={`/development/${post.slug}`}
               key={post.slug}
               className="flex py-5 items-center justify-between gap-2 border-b last:border-none"
             >
