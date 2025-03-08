@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import localFont from "next/font/local";
+import localFont from 'next/font/local';
 
 export const metadata: Metadata = {
   title: 'Review Waffle Rookie',
 };
 
 const pretendard = localFont({
-  src: "../../public/fonts/PretendardVariable.woff2",
-  display: "swap",
+  src: '../../public/fonts/PretendardVariable.woff2',
+  display: 'swap',
 });
 
 export default function RootLayout({
