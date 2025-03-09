@@ -2,11 +2,11 @@ import { getPostList, Post } from '@/utils/post';
 import PageLayout from '@/components/pageLayout';
 import Link from 'next/link';
 
-export default async function DevelopmentListPage() {
-  const postList = await getPostList({ dataPath: 'development' });
+export default async function PersonalEssayListPage() {
+  const postList = await getPostList({ dataPath: 'writing/personal-essay' });
 
   return (
-    <PageLayout title="개발" description="개발 기록을 위한 공간">
+    <PageLayout title="Personal Essay" description="삶의 무의미를 위한 공간">
       <div>
         {postList.map((post: Post) => {
           const date = new Date(post.publishDate);
@@ -15,7 +15,7 @@ export default async function DevelopmentListPage() {
           const day = date.getDate();
           return (
             <Link
-              href={`/development/${post.slug}`}
+              href={`/writing/personal-essay/${post.slug}`}
               key={post.slug}
               className="flex py-5 items-center justify-between gap-2 border-b last:border-none"
             >

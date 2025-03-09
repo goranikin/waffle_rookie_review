@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Home } from 'lucide-react';
 import { Nav } from '@/components/nav';
 import { useRouter } from 'next/navigation';
+import MobileNav from './mobile-nav';
 
 export const Header = () => {
   return (
@@ -13,9 +14,13 @@ export const Header = () => {
         <HomeLogo />
         <BackButton />
       </div>
-      <div className="flex items-center">
-        {/*<MobileNav />*/}
-        <Nav />
+      <div className="flex grow items-center">
+        <div className="hidden sm:flex flex-1 justify-center">
+          <Nav />
+        </div>
+        <div className="ml-auto flex items-center sm:hidden">
+          <MobileNav />
+        </div>
       </div>
     </header>
   );
