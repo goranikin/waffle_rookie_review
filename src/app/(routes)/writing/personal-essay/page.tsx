@@ -1,35 +1,13 @@
-import { getPostList, Post } from '@/utils/post';
+import { getPostList } from '@/utils/post';
 import PageLayout from '@/components/pageLayout';
-import Link from 'next/link';
+import PostList from '@/components/postList';
 
 export default async function PersonalEssayListPage() {
   const postList = await getPostList({ dataPath: 'writing/personal-essay' });
 
   return (
-    <PageLayout title="Personal Essay" description="삶의 무의미를 위한 공간">
-      <div>
-        {postList.map((post: Post) => {
-          const date = new Date(post.publishDate);
-          const year = date.getFullYear();
-          const month = date.getMonth() + 1;
-          const day = date.getDate();
-          return (
-            <Link
-              href={`/writing/personal-essay/${post.slug}`}
-              key={post.slug}
-              className="flex py-5 items-center justify-between gap-2 border-b last:border-none"
-            >
-              <div className="flex flex-col gap-1 flex-1">
-                <span className="font-semibold text-lg break-all line-clamp-2">{post.title}</span>
-                <span className="break-all">{post.description}</span>
-                <time className="text-xs mt-1">
-                  {year}.{month}.{day}
-                </time>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+    <PageLayout title="삶의 기록" description="삶의 무의미를 위한 공간">
+      <PostList posts={postList} basePath="/writing/personal-essay" />
     </PageLayout>
   );
 }
