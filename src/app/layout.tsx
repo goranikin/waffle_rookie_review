@@ -4,7 +4,10 @@ import { Header } from '@/components/header';
 import localFont from 'next/font/local';
 
 export const metadata: Metadata = {
-  title: 'Hyeok-Blog',
+  title: 'Hyeok',
+  icons: {
+    icon: '/itisme.png',
+  },
 };
 
 const pretendard = localFont({
