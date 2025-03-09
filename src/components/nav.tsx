@@ -14,25 +14,25 @@ type Nav = {
 export const navs = [
   {
     href: '/development',
-    label: 'Development',
+    label: '개발',
   },
   {
     href: '/writing',
-    label: 'Writing',
+    label: '글',
   },
   {
     href: '/resume',
-    label: 'Resume',
+    label: '이력',
   },
   {
     href: '/guestbook',
-    label: 'Guestbook',
+    label: '방명록',
   },
 ];
 
 export const Nav = () => {
   return (
-    <nav className="sm:flex hidden items-center space-x-6 text-lg font-medium gap-2">
+    <nav className="flex grow justify-evenly items-center space-x-6 text-lg font-medium gap-2">
       {navs.map((nav) => (
         <NavItem key={nav.label} {...nav} />
       ))}
@@ -47,8 +47,8 @@ export function NavItem({ href, label, external, onClick }: Nav & { onClick?: ()
     <Link
       href={href}
       className={cn(
-        'transition-colors hover:font-black py-3 text-primary font-bold flex items-center',
-        pathname?.startsWith(href) && 'underline underline-offset-4 font-black',
+        'transition-colors hover:font-black py-3 text-primary flex items-center',
+        pathname?.startsWith(href) && 'underline underline-offset-4 font-bold',
       )}
       target={external ? '_blank' : undefined}
       onClick={onClick}

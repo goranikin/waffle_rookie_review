@@ -1,6 +1,7 @@
 import { getPostBySlug } from '@/utils/post';
 import { notFound } from 'next/navigation';
 import PageLayout from '@/components/pageLayout';
+import PostPageLayout from '@/components/postPageLayout';
 
 type Props = {
   params: Promise<{
@@ -8,10 +9,10 @@ type Props = {
   }>;
 };
 
-export default async function PostPage({ params }: Props) {
+export default async function DevelopmentPage({ params }: Props) {
   const slug = (await params).slug;
 
-  const post = await getPostBySlug({ slug });
+  const post = await getPostBySlug({ slug, dataPath: 'development' });
 
   if (!post) {
     notFound();
@@ -19,12 +20,7 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <PageLayout>
-      <div className="flex flex-col mt-5 gap-10">
-        <h1 className="text-5xl font-black whitespace-pre-wrap">{post.title}</h1>
-        <div className="prose max-w-full">
-          <post.content />
-        </div>
-      </div>
+      <PostPageLayout post={post} />
     </PageLayout>
   );
 }
