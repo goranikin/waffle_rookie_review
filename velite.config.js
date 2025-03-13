@@ -19,7 +19,7 @@ export default defineConfig({
           title: s.string(),
           description: s.string(),
           slug: s.path(),
-          publishDate: s.string().datetime(),
+          publishDate: s.string().date(),
           thumbnailUrl: s.string().optional(),
           content: s.mdx(),
         })
@@ -37,7 +37,7 @@ export default defineConfig({
           title: s.string(),
           description: s.string(),
           slug: s.path(),
-          publishDate: s.string().datetime(),
+          publishDate: s.string().date(),
           thumbnailUrl: s.string().optional(),
           content: s.mdx(),
         })
@@ -56,7 +56,7 @@ export default defineConfig({
           title: s.string(),
           description: s.string(),
           slug: s.path(),
-          publishDate: s.string().datetime(),
+          publishDate: s.string().date(),
           thumbnailUrl: s.string().optional(),
           content: s.mdx(),
         })
