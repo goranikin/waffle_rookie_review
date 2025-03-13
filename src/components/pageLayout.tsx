@@ -1,11 +1,11 @@
 import { cn } from '@/utils/cn';
 
-interface PageLayoutProps {
+type PageLayoutProps = {
   children: React.ReactNode;
   title?: string;
   description?: string;
   className?: string;
-}
+};
 
 export default function PageLayout({ children, title, description, className }: PageLayoutProps) {
   return (
@@ -18,7 +18,6 @@ export default function PageLayout({ children, title, description, className }: 
           {description && <span className="text-primary text-xl">{description}</span>}
         </div>
       )}
-
       {children}
     </div>
   );

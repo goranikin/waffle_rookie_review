@@ -1,6 +1,10 @@
 import { getPostBySlug } from '@/utils/post';
 import { notFound } from 'next/navigation';
 import PageLayout from '@/components/pageLayout';
+import PostPageLayout from '@/components/postPageLayout';
+import { personalEssay } from '#site/contents';
+import { Metadata } from 'next';
+import metadata from '@/utils/metadata';
 
 type Props = {
   params: Promise<{
@@ -9,9 +13,8 @@ type Props = {
 };
 
 export default async function PersonalEssayPage({ params }: Props) {
-  const slug = (await params).slug;
-
-  const post = await getPostBySlug({ slug, dataPath: 'writing/personal-essay' });
+  const { slug } = await params;
+  const post = getPostBySlug({ slug: slug, category: 'writing/personal-essay' });
 
   if (!post) {
     notFound();
@@ -19,12 +22,29 @@ export default async function PersonalEssayPage({ params }: Props) {
 
   return (
     <PageLayout>
-      <div className="flex flex-col mt-5 gap-10">
-        <h1 className="text-4xl font-black whitespace-pre-wrap">{post.title}</h1>
-        <div className="prose max-w-full">
-          <post.content />
-        </div>
-      </div>
+      <PostPageLayout post={post} />
     </PageLayout>
   );
+}
+
+export function generateStaticParams() {
+  return personalEssay.map((post) => ({
+    slug: post.slug,
+  }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const post = personalEssay.find((post) => post.slug === params.slug);
+
+  if (!post) {
+    return {};
+  }
+
+  return metadata({
+    title: post.title,
+    description: post.description,
+    path: post.permalink,
+    publishDate: post.publishDate,
+    image: post.thumbnailUrl,
+  });
 }

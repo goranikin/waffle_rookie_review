@@ -16,6 +16,7 @@
     "@next/mdx": "^15.2.1",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-slot": "^1.1.2",
+    "@shikijs/rehype": "^3.2.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
     "@types/mdx": "^2.0.13",
@@ -25,6 +26,8 @@
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "rehype-pretty-code": "^0.14.0",
+    "shiki": "^3.2.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
   },
@@ -43,6 +46,7 @@
     "prettier": "^3.5.1",
     "shadcn-ui": "^0.9.5",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "velite": "^0.2.2"
   }
 }

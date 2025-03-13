@@ -1,0 +1,36 @@
+---
+title: LLM에 대해
+publishDate: 2025-03-13
+description: 텍스트 애널리틱스 수업을 듣고 복습한 내용을 정리하는 글 1
+thumbnailUrl: /development/language-model/1.png
+---
+
+Word Embedding: map the words the language into a vector space, so
+semantically similar words are located close to each other.
+(distributed representation)
+
+Starting from NNLM(Neural Network Language Model), there are
+the models such as Word2Vec, GloVe, FastText.
+
+- Word2Vec
+
+![](/development/language-model/2.png)
+![](/development/language-model/3.png)
+
+- GloVe
+
+![](/development/language-model/4.png)
+
+- FastText
+
+![](/development/language-model/5.png)
+![](/development/language-model/6.png)
+
+the sentences are tokenized and then fed into a language model.
+
+In first, the tokens are embedded into vectors using a embedding matrix.
+why embed them? For analysing the natural language, we need to represent each word as a vector, which has real number values.
+
+![](/development/language-model/1.png)
+
+Embedding matrix is called 'W_E', represented as the upper picture. This is gained by training.

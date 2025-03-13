@@ -1,0 +1,252 @@
+---
+title: Next.js 앱 배포하기 (Bun, EC2, nginx, pm2)
+publishDate: 2025-03-02
+description: Next.js와 Bun으로 만든 애플리케이션을 배포합니다. Vercel이 아닌 AWS의 EC2를 이용하고, nginx와 pm2를 통해 서버를 관리합니다.
+thumbnailUrl: /development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/1.png
+---
+
+드디어 자동 배포까지 구축했다! 🎉
+
+개인적인 프로젝트를 진행한다고 토이프로젝트에서 굵직굵직한 개발 요소를 건드리지 못했는데(이 자리를 빌어 인프라를 전부 책임져준 연우에게 감사를), 드디어 뭐가 뭔지 얼추 알 것 같다. 우선 적어도 Docker까지는 다뤄본 뒤 다시 프론트 공부를 할 계획.
+
+개발자로 커리어를 시작하겠다는 다짐을 하고 나니 한 결 마음이 가벼워졌다. 그리고 개발이 재미있어지기도 했고. 더 배워야겠다는 마음을 먹으니 완전히 또 다른 세계다. 열심히 배워봐야지.
+
+먹고 산다는 것에 대한 지난 날의 고민들은 학기 중에 글로 남길 계획!
+
+---
+
+Next.js로 작성한 앱을 AWS EC2로 배포하는 방법은 쉽게 찾아볼 수 있다.
+문제는 대부분이 나처럼 공부하며 정리한 글이다보니 온전히 신뢰하기 어렵다는 점.
+IAM 역할에 정책을 지정할 때 필요 없는 정책이 끼어있다든가, 혹은 yml 파일이나 nginx config 파일의 설정이 완전히 잘못 되있다던가 등등...
+그래서 머리 깨져가며 배운 내용을 정리하며 최대한 그 이유들을 작성해보겠다.
+
+## 1. EC2 인스턴스
+
+React를 배포할 땐 S3와 같은 정적 파일 호스팅 서비스만 있어도 충분하다.
+빌드를 통해 만들어진 정적 HTML과 Javascript 파일을 클라이언트측에 건네면, 클라이언트 쪽에서 받은 데이터를 기반으로 렌더링하기 때문이다. 이를 Client Side Rendering(CSR)이라 한다.
+
+Next.js는 CSR 방식의 호스팅도 지원하지만 Server Side Rendering(SSR)도 제공한다.
+SSR은 클라이언트의 요청에 따라 서버가 필요한 데이터를 가져오고, 이를 기반으로 렌더링한 뒤 클라이언트에게 전달한다.
+이 외에도 백엔드 API 라우팅 기능 등 서버측에서 처리해야 할 기능들을 제공하기 위해 배포할 때 Node.js 런타임 환경이 필요하고,
+이를 위해 서버를 돌려야 한다. (물론 React도 데이터 페칭을 위한 백엔드 API 서버는 필요로 한다.
+빌드된 파일을 어떤 식으로 호스팅하느냐의 문제만 보면 React는 서버 없이도 가능하다는 이야기.)
+
+집에 있는 컴퓨터를 24시간 돌리며 서버 컴퓨터로 만들 게 아니라면 보통은 가상 머신을 빌려 서버로 이용한다.
+이러한 서버를 대여해주는 서비스가 AWS의 EC2이다. 가상 머신 하나를 빌릴 때 그걸 우리는 '인스턴스'라 부른다.
+
+그러면 배포를 위해 우리의 서버를 만들어보자.
+
+### 1-1) 인스턴스 생성
+
+AWS에 접속해 EC2 서비스에서 인스턴스 생성을 누른다.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/1.png)
+
+우리가 빌릴 가상 서버의 운영체제와 필요한 각종 소프트웨어의 성능을 골라야 한다.
+Quick Start로 운영체제는 Ubuntu, 그리고 이미지는 프리티어 사용이 가능한 아무거나 고르자.
+
+Ubuntu는 서버 환경에서 많이 쓰이는 Linux 배포판이다.
+운영체제를 딥하게 파지 않는 이상 Ubuntu를 쓰는 게 무난하다. 정보도 많고 라이센스 비용도 없고.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/2.png)
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/3.png)
+
+인스턴스에 접속하기 위한 키 페어를 생성하자. 나중에 생성된 키 파일을 가지고 인스턴스에 접속한다.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/4.png)
+
+네트워크 설정은 SSH, HTTPS, HTTP 트래픽 전부 허용하자.
+기본적으로 우리는 SSH 트래픽을 통해 인스턴스에 접속할 거고, 나중에 브라우저에서 HTTP 프로토콜을 통해 인스턴스로 요청을 보내면 인스턴스에서 실행 중인 웹 애플리케이션들이 웹 페이지를 브라우저에게 제공하게 된다.
+HTTP나 HTTPS의 경우 요청을 보낼 수 있는 IP를 제한할 필요는 없지만, SSH의 경우 보안을 위해 특정 IP 주소만 허용하는 게 좋다. 하지만 나는 귀찮으니 그냥 열어놨다.
+
+이후 인스턴스를 생성한 뒤 우리의 서버를 세팅해보자.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/5.png)
+
+인스턴스로 들어가 위쪽에 '연결' 버튼을 누르자.
+
+아래에 있는 예: ssh -i ... 명령어를 통해 인스턴스에 접속할 수 있다.
+아까 생성한 키 파일이 있는 위치로 이동한 뒤 명령어를 실행하자.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/6.png)
+
+짠. ubuntu로 접속했다.
+
+---
+
+### 1-2) 인스턴스 세팅
+
+접속한 인스턴스에서 배포를 위한 세팅을 한다. 위 ubuntu에서 이어서 하면 된다.
+
+```shell
+sudo apt update
+sudo apt upgrade
+```
+
+apt는 패키지 관리 프로그램이다. 각 소프트웨어들의 최신 버전 정보를 update하고, 그 정보를 기반으로 upgrade한다.
+
+```shell
+sudo apt install nginx
+```
+
+nginx 를 설치한다.nginx는 웹 서버 프로그램으로 클라이언트 요청에 따라 정적 파일을 보내주는 호스팅 역할을 한다.
+이 외에도 다양한 기능과 역할을 수행하지만 여기서는 생략한다. 자세한 기능과 역사는 [nginx에 대한 영상]을 참고하자!
+
+이번 프로젝트에서는 경험삼아 Bun을 사용했다. 대부분 npm을 사용하지만 여기에서는 Bun을 통해 세팅하는 과정을 소개한다.
+npm에 대한 정보가 필요하다면 [이 블로그]를 참고하자!
+
+```shell
+sudo apt install unzip # unzip 설치
+curl -fsSL https://bun.sh/install | bash # bun 설치
+```
+
+Bun 설치에 필요한 unzip을 먼저 설치하고, 그 다음 Bun을 설치한다.
+
+```shell
+echo 'export PATH="$HOME/.bun/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+설치가 완료된 뒤 Bun의 실행 파일 경로를 환경 변수에 추가해준다(대부분 알아서 잘 되지만 혹시 모르니 한 번 더 수동으로 추가).
+그리고 bun -v 명령어로 잘 설치되었는지 확인해보자.
+
+이후 GitHub 레포지토리에서 프로젝트를 가져온 뒤, 프로젝트의 루트 디렉토리로 이동한다.
+
+```shell
+bun install
+bun run build
+```
+
+bun을 이용해 의존성을 설치하고 빌드까지 해준다.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/7.png)
+
+---
+
+### 1-3) nginx 세팅
+
+프로젝트가 깔린 경로는 /home/ubuntu/프로젝트 이름 일 것이다.
+여기서 루트 디렉토리까지 이동한 다음, 설정 파일 경로로 접속하자.
+
+```shell
+cd /etc/nginx/sites-available
+```
+
+이 디렉토리는 nginx에서 각 웹사이트에 대한 서버 설정 파일을 저장하는 곳이다.
+서버 설정을 한 뒤, /etc/nginx/sites-enabled 디렉토리에 심볼릭 링크(바로가기와 비슷한 개념)로 연결하면 된다.
+
+이미 존재하는 default 설정은 지정한 웹사이트가 아닌 다른 요청을 처리하는데 쓰인다.
+웹사이트별로 설정이 다르므로 보통은 도메인 이름으로 해주면 된다.
+나는 도메인 연결을 안 한 상태이니 레포지토리 이름인 waffle_rookie_review.conf 로 생성했다.
+
+```shell
+sudo touch waffle_rookie_review.conf
+sudo vim waffle_rookie_review.conf
+```
+
+waffle_rookie_review.conf
+
+```shell
+server {
+    listen 80;
+    server_name 퍼블릭 IPv4 주소;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```shell
+sudo ln -s /etc/nginx/sites-available/waffle_rookie_review.conf /etc/nginx/sites-enabled/
+```
+
+설정 후 심볼릭 링크까지 생성해주면 끝.
+
+설정의 의미는 다음과 같다.
+
+`listen 80` -> 포트 번호 80으로 들어오는 요청을 처리한다.
+
+`server_name` -> 서버의 IP 주소
+
+포트 번호 80은 HTTP의 기본 포트다. 따라서 `http://<IPv4 주소>` 로 요청을 보내면 이 서버 블록이 활성화된다.
+
+`location /` -> '/' 경로(루트 경로)에 대한 요청을 처리한다.
+
+`proxy_pass http://localhost:3000` -> `http://<IPv4 주소>/` 요청을 Next.js 서버로 전달한다.
+
+이 외에는 서버단에서 요청을 처리하는데 쓰이는 세부적인 설정들이다.
+
+설정 파일의 문법이 올바른지 테스트해보자.
+
+```shell
+sudo nginx -t
+```
+
+다음과 같이 뜨면 성공이다.
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/8.png)
+
+설정 파일이 반영되도록 nginx를 재시작하자.
+
+```shell
+sudo systemctl restart nginx
+```
+
+---
+
+### 1-4) pm2 세팅
+
+pm2(Process Manager 2)는 우리의 애플리케이션을 실행하고 관리해줄 프로그램이다.
+앱이 종료되거나 문제가 발생하면 자동으로 재시작해준다.
+
+```shell
+bun install pm2 -g
+pm2 start bun --name "waffle_rookie_review" -- start
+```
+
+라고 하면... node.js를 찾지 못했다고 뜨며 실행이 안 된다.
+실행은 bun으로 하지만 pm2가 기본적으로 node.js 환경 위에서 돌아가나보다.
+node.js를 설치해주자.
+
+```shell
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+```
+
+그리고 다시 pm2 start bun ~~ 명령어를 실행해주면...
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/9.png)
+
+서버가 실행됐다!
+
+그리고 `http://<Public IPv4 주소>` 로 접속해보면...
+
+![](/development/deployment-of-nextjs-with-bun-using-ec2-nginx-pm2/10.png)
+
+이렇게 배포는 끝!
+
+---
+
+이모저모
+
+1. EC2 인스턴스에 지정된 퍼블릭 IPv4 주소는 인스턴스를 재부팅하면 새롭게 할당받는다.
+   그래서 고정적인 IPv4 주소를 얻으려면 Elastic IP를 할당받으면 된다.
+
+2. Bun 명령어로 실행은 했지만, 런타임 환경이 Bun인 걸 좀 더 확실하게 확인할 수 있을까?
+   인스턴스에서 명령어 `pm2 describe <app-name>`을 실행하면 `script path: /home/ubuntu/.bun/bin/bun` 으로 지정된 걸 볼 수 있다.
+   더 나아가 node.js version이 N/A로 현재 런타임 환경이 node.js 가 아님을 알 수 있다!
+
+3. vim editor를 처음 만났을 때 매우 당황스러웠다.
+   나가는 법을 몰라 터미널을 강제 종료했던 과거의 나... 이제야 CLI 기반으로 컴퓨터를 다루는 게 익숙해진 느낌이다.
+
+---
+
+[nginx에 대한 영상]: https://www.youtube.com/watch?v=6FAwAXXj5N0
+[이 블로그]: https://sollogging.tistory.com/91
