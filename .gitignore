@@ -43,3 +43,7 @@ next-env.d.ts
 
 # Bun cache
 .cache/
+
+# Velite
+./velite
+public/static

@@ -5,7 +5,7 @@ type MetadataProps = {
   title: string;
   description: string;
   path: string;
-  publishDate: string;
+  publishDate: string | Date;
   image?: string;
 };
 
@@ -24,7 +24,7 @@ export default function metadata(props: MetadataProps): Metadata {
       title,
       description,
       url: BASE_URL + path,
-      siteName: 'miryang.dev',
+      siteName: 'hyeok12053.dev',
       images,
       locale: 'ko_KR',
     },

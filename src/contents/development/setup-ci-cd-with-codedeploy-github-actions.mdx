@@ -1,0 +1,589 @@
+---
+title: Next.js 앱 CI/CD 구축하기 (Bun, GitHub Actions, CodeDeploy)
+publishDate: 2025-03-02
+description: Next.js와 Bun으로 만든 애플리케이션을 배포합니다. Vercel이 아닌 AWS의 EC2를 이용하고, nginx와 pm2를 통해 서버를 관리합니다.
+thumbnailUrl: /development/setup-ci-cd-with-codedeploy-github-actions/1.png
+---
+
+수정 사항이 있을 때마다 매번 EC2 인스턴스에 들어가 레포지토리를 클론하고 빌드하는 건 번거로운 과정이다. 그래서 배포를 자동화해 주는 작업을 통해 수고로움을 덜 수 있다. 흔히 CI/CD로 부르는데 용어가 뭔지 간단하게 살펴보자.
+
+Continuous Integration
+
+- 코드의 변경사항을 합쳐서 빌드하고 테스트하는 과정을 말한다. 수정 사항이 애플리케이션을 터친다면 CI에서 막히는 셈이다.
+
+Continuous Delivery & Deployment
+
+- CI 단계를 통과한 수정 사항을 배포한다. 최종 배포를 수동으로 트리거하면 Delivery, 자동으로 하면 Deployment라 부른다.
+
+CI/CD는 다음과 같은 파이프라인으로 구성된다.
+
+1. 코드 변경
+2. 빌드
+3. 테스트
+4. 배포 준비
+5. 배포
+
+이번 포스트에서는 위 파이프라인 작업들을 자동화할 것이다. 내 프로젝트는 Bun을 이용해 진행하므로 npm이나 yarn 패키지 관리를 쓰고 런타임 환경을 node.js로 쓴다면 적절하게 바꿔줘야 한다!
+
+---
+
+### YAML
+
+YAML은 JSON의 상위 호환 문법으로 보통 configuration 작업에 많이 쓰인다. 자동 배포를 위해 설정해 주는 데이터 파일도 전부 YAML 문법으로 쓰인다. 간단하게 YAML 문법에 대해 소개하자면...
+
+```bash
+# 주석을 지원한다!
+
+# '', "" 모두 지원한다. \n같은 이스케이프 문자나 :같은 yaml 문법에 쓰이는 기호를 쓸 땐 quote로 감싸야 한다.
+# 프로퍼티 이름에 띄어쓰기도 가능하다.
+example: 'with quotes'
+example: without quotes
+
+# >, | 를 사용해 긴 문장을 표현할 수 있다. >는 space, |는 \n 역할이다.
+
+한글도: 지원한다는 사실
+
+# null을 사용 가능하며, ~ 기호로 단축 표현할 수 있다.
+null value: null
+null shorthand: ~
+
+# 배열은 - 로 구분한다.
+array:
+    - apple
+    - banana
+    - 12345
+    - a: b
+
+# json 스타일도 가능하다. 그러나 json의 배열 기능을 보완하는데 있어 yaml의 장점이 있다는 사실.
+# 따옴표나 쉼표를 쓰지 않기 위해 yaml이 하이픈을 만들었으니 위처럼 사용하자.
+json style array: [
+    apple,
+    'banana',
+    12345,
+    a: b,
+]
+
+# 객체는 들여쓰기와 :로 구분
+object:
+    name: namu wiki
+    type: dictionary
+    primary color:
+        gradient:
+            start: 0x00A495
+            end: 0x13AD65
+        header: 0x008275
+
+# 마찬가지로 따옴표와 쉼표, 중괄호같은 낭비를 없애기 위해 yaml이 있으니 위처럼 쓰도록 하자.
+json style object: {
+    name: namu wiki,
+    "type": "dictionary",
+}
+
+implicit null: # 이러면 암묵적으로 null이 들어간다.
+```
+
+이 외에는 공식문서를 참고하면 된다! 아니면 나무위키에도 잘 설명 되어있으니 참고하길...
+
+---
+
+### GitHub Actions
+
+GitHub Actions는 CI/CD를 도와주는 도구다. 어떤 식으로 쓰는지 https://docs.github.com/ko/actions/writing-workflows/quickstart 를 따라 하면 바로 느낌이 온다!
+
+GitHub Actions와 YAML에 대해 작성한 글이 있으니 궁금하면 보시길~ (https://hyeokrani.tistory.com/117)
+
+한 번 CI를 위한 파일을 만들고 레포지토리에 push 해보자.
+
+```yaml
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "BUN_INSTALL=$HOME/.bun" >> $GITHUB_ENV
+          echo "PATH=$HOME/.bun/bin:$PATH" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: bun install
+      - name: Check
+        run: bun check
+```
+
+이 workflow는 main 브랜치로의 push나 PR에 작동한다. 어떤 작업들이 시행되는지 보면,
+
+1. 레포지토리를 클론 한다.
+2. Bun을 설치한다.
+3. Bun으로 의존성을 설치한다.
+4. 코드를 검사한다.
+
+위 과정이 잘 일어나는지 브랜치를 생성해 PR을 올려보자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/1.png)
+![](/development/setup-ci-cd-with-codedeploy-github-actions/2.png)
+
+workflow가 잘 작동했고, 코드 검사도 성공적으로 잘 끝난 걸 볼 수 있다.
+이제 앞으로 main 브랜치에 PR로 올려주면 CI 성공 여부를 보고 합칠 수 있다.
+
+---
+
+수정한 코드가 기존 애플리케이션을 터칠 가능성을 확인했으니, 이제 수정된 코드를 인스턴스에 올려 배포하는 과정을 자동화하면 된다.
+
+자동 배포의 파이프라인은 어떻게 될까?
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/3.png)
+첫 시작은 GitHub repository의 main 브랜치에 변경사항이 생기면 GitHub Actions를 트리거하도록 설정한다.
+
+이후 GitHub Actions는
+
+1. 프로젝트 파일을 빌드하고
+2. 빌드 파일을 압축 후 S3 Bucket에 업로드한 뒤
+3. CodeDeploy가 정해진 동작을 하도록 트리거한다.
+
+CodeDeploy는 EC2 instance 내에 Code Deploy Agent라는 이름으로 실행되어
+
+1. S3에 올라온 파일을 다운로드하고
+2. 압축을 해제해 프로젝트 루트 디렉토리에 설치한 뒤
+3. 정해진 스크립트를 실행한다.
+
+이때 스크립트는 설치 전 후로 정의해 줄 수 있음!
+
+여기서 생기는 궁금점이 두 개 있다.
+
+Q1. 왜 의존성 설치부터 빌드하는 과정을 EC2 인스턴스가 직접 하지 않고, GitHub Actions의 가상 머신에서 실행할까?
+Q2. 빌드한 파일을 압축한 뒤 곧장 EC2 인스턴스로 보내지 않고, S3로 올리는 이유가 뭘까?
+
+Q1번에 대해서 AI에게 얻어낸 답은 이렇다. (틀린 게 있다면 지적해 주세요!)
+
+A1-1) 의존성 설치 및 빌드 과정을 GitHub Actions runner의 통일된 환경에서 실행해 일관성을 높인다. 로컬이나 서버 환경은 상황마다 달라질 수 있으므로! (대신 이건 도커를 활용하면 훨씬 좋을 듯)
+A1-2) 우리의 인스턴스는 서버 업무용! 서버 돌리는 데 쓰이는 메모리를 굳이 레포지토리 클론하고 프로젝트 빌드하는 데 쓸 이유가 없다. 서버용 컴퓨터는 서버 업무에만 집중하게 해서 메모리 부담도 줄이고, 관리 측면에서도 책임 소재를 확실히 하자. (그리고 우리의 계정은 프리티어! 아기자기한 메모리와 CPU를 위해서 최대한 부담을 줄여야 한다.)
+
+Q2번에 대해서 우선 압축 파일을 보내는 이유는 인스턴스의 네트워크 부하를 줄이기 위함도 있지만, 기본적으로는 압축 알고리즘이 효율적이기 때문이다. 압축과 해제에 소요되는 작업 시간과 부하가 생 파일을 네트워크로 전송하는 것보다 더 낫다!
+
+A2-1) 빌드된 배포 파일(Artifact)을 개인적인 공간인 인스턴스에서 관리하기보다, 중앙화된 저장소인 S3 Bucket에 놓아 관리를 용이하게 한다. 일관성이나 재사용성, 실패 시 복구 등을 훨씬 안정적으로 실행할 수 있다. (중요한 파일을 하드디스크에 저장하는 것처럼!)
+A2-2) 빌드와 배포 단계를 분리한다. 중간에 S3를 두고 업로드 전까지는 빌드 및 테스트 과정, 업로드 후에는 EC2 인스턴스가 실행하는 배포 과정으로 명확히 나눌 수 있다.
+
+이제 이유를 알았으니 실행하러 가보자!
+
+---
+
+### 1. Bucket 생성 및 GitHub Actions가 사용할 IAM 계정 생성
+
+우선 압축한 빌드 파일을 올릴 bucket을 생성하자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/4.png)
+
+rookie-review-ci-cd라는 이름으로 만들었다.
+
+그리고 GitHub Actions가 사용할 IAM 계정을 만들어야 한다. 이 계정은 S3와 CodeDeploy에 접근할 수 있는 권한이 있어야 한다.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/5.png)
+
+AmazonS3FullAccess, AWSCodeDeployFullAccess 두 정책을 할당한 뒤, GitHub Actions가 이 계정에 접근할 수 있도록 Access key를 발급받자.
+
+어떤 블로그에서는 EC2에도 접근할 수 있는 정책을 할당했는데, GitHub Actions는 직접적으로 EC2에 접근하지 않는다. EC2에는 CodeDeploy가 접근하므로 이 계정에는 CodeDeploy에 대한 정책만 할당해 주면 된다.
+
+이후 GitHub 레포지토리의 Setting > Secrets and variables > Actions로 이동해 Access key를 Repository Secrets을 등록하자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/6.png)
+
+---
+
+### 2. EC2와 CodeDeploy에 할당할 역할 생성
+
+EC2와 CodeDeploy가 AWS 내에서 활동하기 위해 정책을 할당받아야 한다. 정책들을 모아놓은 역할을 만들어 지정해 주면 된다.
+
+EC2는 어떤 정책이 필요할까?
+
+1. S3에 업로드된 아티팩트를 다운로드 받아야 한다. -> AmazonS3ReadOnlyAccess
+2. EC2 인스턴스에서 CodeDeploy Agent가 작동할 때 필요한 권한이 있어야 한다. -> AmazonEC2RoleforAWSCodeDeploy
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/7.png)
+![](/development/setup-ci-cd-with-codedeploy-github-actions/8.png)
+
+그리고 CodeDeploy에 필요한 역할도 만들어주자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/9.png)
+
+얘는 요거 하나만 있으면 된다.
+
+---
+
+3. CodeDeploy 애플리케이션 및 배포 그룹 생성
+
+CodeDeploy에 들어가 애플리케이션을 생성하자.
+![](/development/setup-ci-cd-with-codedeploy-github-actions/10.png)
+
+CodeDeplooy를 이용해 EC2에 배포할 것이므로 EC2/On-premises로 플랫폼을 지정하자.
+
+배포 그룹을 생성하자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/11.png)
+![](/development/setup-ci-cd-with-codedeploy-github-actions/12.png)
+![](/development/setup-ci-cd-with-codedeploy-github-actions/13.png)
+
+그룹에 아까 생성한 역할을 지정해 주고, 인스턴스를 연결해 주자. 로드 밸런서는 우선 체크 해제해 주자! (비용 절감)
+
+이후 GitHub Actions에 필요한 사항들을 secrets에 등록해 주자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/14.png)
+
+---
+
+### 4. EC2 인스턴스에 CodeDeploy Agent 설치
+
+인스턴스에 접속한 뒤 다음 명령어를 실행하자.
+
+```bash
+sudo apt update
+sudo apt install ruby-full
+sudo apt install wget
+cd /home/ubuntu
+wget https://aws-codedeploy-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/latest/install
+chmod +x ./install
+
+sudo ./install auto > /tmp/logfile (20.04 버전)
+```
+
+CodeDeploy 설치 및 실행을 위해 ruby-full, wget을 설치해야 한다. 그전에 둘의 패키지 목록을 최신 상태로 업데이트해준다.
+
+최신 버전인 ubuntu 20.04 버전의 경우 출력 로그 저장 경로를 지정하는 > /tmp/logfile 명령어를 추가하라고 공식 문서에 나와있다.
+
+아래 명령어를 통해 정상적으로 작동하는지 확인할 수 있다.
+
+```bash
+sudo service codedeploy-agent status
+```
+
+Active: active (running) -> 정상적으로 CodeDeploy Agent가 작동 중에 있다!
+
+---
+
+### 5. GitHub Actions와 CodeDeploy 설정하기
+
+이제 GitHub Actions가 실행해 줄 작업을 정의하자.
+
+.github/workflows/deploy.yml
+
+```yaml
+name: deploy to S3
+
+# main 브랜치로 push 할 때 workflow 실행
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 환경 변수 설정
+env:
+  S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+  CODE_DEPLOY_APPLICATION_NAME: ${{ secrets.CODE_DEPLOY_APPLICATION_NAME }}
+  CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: ${{ secrets.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 레포지토리 clone
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bun 설치 및 관련 환경 변수 설정
+      - name: Setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "BUN_INSTALL=$HOME/.bun" >> $GITHUB_ENV
+          echo "PATH=$HOME/.bun/bin:$PATH" >> $GITHUB_ENV
+
+      # 프로젝트 의존성 설치
+      - name: Install dependencies
+        run: bun install
+
+      # Next.js 앱 빌드
+      - name: Build next app
+        run: bun run build
+
+      # 빌드한 파일과 프로젝트 소스를 압축해 .zip 파일로 만들기
+      - name: Make zip file
+        run: zip -qq -r ./rookie_review.zip . -x ".git/*"
+        # -qq: quit 모드로 실행 (에러나 경고메세지만 출력하도록 함)
+        # -r: 지정된 디렉토리를 재귀적으로 압축 (하위 디렉토리와 파일들 모두 압축)
+        # -x: 지정한 파일들 압축 과정에서 제외하기
+
+      # Github Action에서 AWS의 권한 자격을 얻어오는 단계
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 압축된 파일을 S3에 업로드
+      - name: Upload to S3
+        run: aws s3 cp --region ap-northeast-2 ./rookie_review.zip s3://${{ env.S3_BUCKET_NAME }}/rookie_review.zip
+        # aws s3 cp: AWS CLI 명령어로 파일 복사
+        # --region ap-northeast-2: 업로드 대상 리전 설정
+        # 파일을 S3 버킷의 루트 디렉토리에 업로드.
+
+      # S3에 업로드 된 빌드 파일을 이용해 CodeDeploy가 정의된 동작을 하도록 트리거
+      - name: Code Deploy
+        run: |
+          aws deploy create-deployment \
+          --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
+          --deployment-config-name CodeDeployDefault.AllAtOnce \
+          --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+          --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=rookie_review.zip
+```
+
+appspec.yml은 CodeDeploy가 실행할 작업 설정 파일이다.
+
+appspec.yml
+
+```yaml
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ubuntu/waffle_rookie_review
+    overwrite: yes
+permissions:
+  - object: /home/ubuntu/waffle_rookie_review
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+hooks:
+  BeforeInstall:
+    - location: scripts/before-install.sh
+      timeout: 300
+      runas: ubuntu
+  AfterInstall:
+    - location: scripts/after-install.sh
+      timeout: 300
+      runas: ubuntu
+```
+
+여기서 나는 before-install.sh를 생성해 자동배포 전, 프로젝트 파일을 전부 지워버리고 새로 설치하도록 했다.
+
+scripts/before-install.sh
+
+```bash
+REPOSITORY=/home/ubuntu/waffle_rookie_review
+
+# 모든 파일과 숨김 파일 삭제
+find $REPOSITORY -mindepth 1 -delete
+echo "Cleanup completed."
+```
+
+이유는 다음과 같은 에러가 발생해서인데,
+
+```bash
+Message
+The deployment failed because a specified file already exists at this location: /home/ubuntu/waffle_rookie_review/.gitignore
+```
+
+배포 과정에서 CodeDeploy가 파일을 덮어씌우지 않고 에러를 뱉었기 때문. overwrite: yes 임에도 .gitignore 같은 민감한 파일들은 덮어쓰지 않는 걸까. 정확히는 잘 모르겠다. 어차피 기존 파일과 충돌할 수도 있으므로 완전히 삭제하고 새로 프로젝트를 깔아주는 게 좋기도 하고.
+
+그리고 after-install.sh를 생성해 배포 이후 정상적으로 pm2가 애플리케이션을 재실행하도록 설정했다.
+
+scripts/after-install.sh
+
+```bash
+REPOSITORY=/home/ubuntu/waffle_rookie_review
+BUN_PATH=/home/ubuntu/.bun/bin/bun
+
+cd $REPOSITORY || {
+  echo "Error: Failed to navigate to project directory."
+  exit 1
+}
+
+$BUN_PATH run deploy
+```
+
+그리고 bun run deploy 명령어를 package.json에 추가하면 된다.
+
+```bash
+"deploy": "pm2 start ecosystem.config.js --env production"
+```
+
+마지막으로 CodeDeploy의 동작 이후 pm2가 정상적으로 애플리케이션을 재실행하도록 설정해 주면 된다.
+
+ecosystem.config.js
+
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'waffle_rookie_review', // 앱의 이름
+      script: './node_modules/next/dist/bin/next', // Next.js 스크립트 경로
+      args: 'start', // Next.js 앱을 시작할 때 사용할 인수
+      exec_mode: 'fork', // 실행 모드: cluster 또는 fork 중 선택
+      instances: '1', // 클러스터 모드에서 실행할 인스턴스 수 (CPU 코어 수만큼)
+      autorestart: true, // 프로세스 자동 재시작 활성화
+      watch: true, // 파일 변경 감지 활성화 (개발 중에만 활용)
+      max_memory_restart: '1G', // 1GB 이상 메모리 사용 시 재시작
+      interpreter: '/home/ubuntu/.bun/bin/bun',
+      env: {
+        NODE_ENV: 'production', // Node.js 환경 변수
+        PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`,
+      },
+    },
+  ],
+};
+```
+
+이러면 끝!....인 줄 알았으나 CodeDeploy에서 에러가 발생했다.
+
+```bash
+LifecycleEvent - AfterInstall
+Script - scripts/after-install.sh
+[stderr]$ pm2 start ecosystem.config.js --env production
+[stderr]/usr/bin/bash: line 1: pm2: command not found
+[stderr]error: script "deploy" exited with code 127
+```
+
+scripts에 적힌 pm2 명령어를 사용하는데 pm2를 찾지 못해 에러가 발생했다.
+
+다음과 같이 심볼릭 링크를 지정해 주면 시스템 PATH 환경 변수에 추가할 수 있다.
+
+```bash
+sudo ln -s /home/ubuntu/.bun/bin/pm2 /usr/bin/pm2
+sudo ln -s /home/ubuntu/.bun/bin/pm2 /usr/local/bin/pm2
+```
+
+pm2 경로는 설정마다 다를 수 있으니 which pm2로 확인하고 적절하게 바꿔주자.
+
+---
+
+### 6. 문제 해결하기
+
+##### 1) 환경변수 파일
+
+환경변수를 지정하는 .env 파일은 보안상의 이유로 .gitignore에 지정되어 있다. 민감한 파일들은 쏙 빼놓고 빌드하기 때문에 EC2 인스턴스의 프로젝트 디렉토리에 존재하지 않는다. 그래서 직접 원격 서버로 안전하게 전송하는 Secure Copy Protocol(SCP)를 사용해 옮겨주면 된다.
+
+```bash
+scp -i <key.pem> .env <ec2-user>@<EC2_PUBLIC_IP>:/<target_directory>
+```
+
+key.pem에는 인스턴스에 접속할 때 쓰는 키의 경로,
+
+ec2-user는 ubuntu, target_directory는 내 경우 /home/ubuntu/waffle_rookie_review 다.
+
+그런데..! 뭔가 이상함을 느꼈다면 👍
+
+바로 CodeDeploy에서 before-install.sh에 프로젝트를 전부 밀어버리는 명령어가 있다! 그래서 .env 파일도 함께 지워지므로 다른 방법을 사용해야 한다.
+
+/home/ubuntu/env_backups 디렉토리를 만들어주고 이곳에 .env 파일을 옮겨주자.
+
+```bash
+mv /home/ubuntu/waffle_rookie_review/.env.local /home/ubuntu/env_backups
+```
+
+그리고 after-install.sh에 백업 폴더에서 설치된 프로젝트 디렉토리로 .env 파일을 옮기는 명령어를 추가한다.
+
+```bash
+if [ -f "/home/ubuntu/env-backups/.env.local" ]; then
+  echo "> Restoring .env.local file..."
+  cp /home/ubuntu/env-backups/.env.local /home/ubuntu/waffle_rookie_review/.env.local || {
+    echo "Error: Failed to restore .env.local file."
+    exit 1
+  }
+else
+  echo "Warning: No backup .env.local file found. Skipping restoration."
+fi
+```
+
+##### 2) 메모리 부족
+
+```bash
+No space left on device @ io_write - /opt/codedeploy-agent/deployment-root/a9949aba-cefa-4167-bc1b-0b0498d28232/d-1KKQEAKKA/bundle.tar
+```
+
+프리티어의 눈물... df -h를 보면 메모리를 전부 사용 중인 걸 확인할 수 있다. 메모리를 최적화하는 것도 방법이겠지만... 그냥 메모리를 늘려주자.
+
+인스턴스로 들어가 volume에서 현재 우리가 배포한 인스턴스가 사용 중인 volume의 크기를 늘려주자.
+
+![](/development/setup-ci-cd-with-codedeploy-github-actions/15.png)
+
+그리고 인스턴스에서 디스크의 첫 번째 파티션 크기를 늘려준다.
+
+```bash
+sudo growpart /dev/xvda 1
+```
+
+다시 df -h로 확인해 보면 메모리가 여유롭여진 걸 볼 수 있다. 💰
+
+##### 3) CodeDeploy의 무한 로딩
+
+처음 CodeDeploy를 설정하고 배포를 기다리는데 3분이 넘도록 pending 상태였다. 어떤 에러가 발생하면 고치기라도 하지만 이 경우는 답이 없다. 컴퓨터가 멈추면 어떻게 하시나요? 저는 껐다 켭니다.
+
+```bash
+sudo systemctl stop codedeploy-agent
+sudo systemctl start codedeploy-agent
+```
+
+음음. 잘 작동하네요.
+
+---
+
+### 7. 이모저모
+
+지금까지 대부분 WebStorm에서 코드를 작성하고, main branch로 PR 한 뒤 ci를 거쳐 정상적인 코드만 병합했다. 자잘한 오타 같은 건 로컬에서 prettier를 통해 잡기도 하고, GitHub Actions에서도 이중으로 잡아주기에 오타는 전혀 신경 쓰지 않았는데... 이번엔 그런 거 없다. 오타로 처절하게 무너졌다.
+
+1. CodeDeploy의 작동을 설정하는 appspec.yml을 appsepc.yml로 잘못 적음
+2. 프로젝트 루트 디렉토리인 waffle_rookie_review가 아니라 rookie_review로 잘못 지정함
+3. Region인 ap-northeast-2를 ap-northeas-2로 오타냄
+
+이 외에도 기억하지 못하는 숱한 오타가 나를 괴롭혔다. 후...
+
+그리고 패키지 매니저 겸 런타임 환경으로 Bun을 사용하며 어려움이 있었다. 대부분의 블로그들이 npm을 이용하다 보니 설정이나 명령어들이 대부분 npm 기준이었다.
+
+자잘하게 명령어를 고친 것 외에 가장 시간을 많이 먹었던 에러는 자동 배포 후 pm2 동작을 설정하는 ecosystem.config.js의 문제였다. 아무 생각 없이 node.js 환경에서 실행하도록 만들어진 설정을 갖다 쓰니 CI/CD가 끝날 때마다 서버가 터졌다. 로그를 살펴보면
+
+```bash
+0|waffle_r |     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+0|waffle_r |     at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+0|waffle_r |     at Module.require (node:internal/modules/cjs/loader:1311:12)
+0|waffle_r |     at require (node:internal/modules/helpers:136:16)
+0|waffle_r |     at Object.<anonymous> (/home/ubuntu/waffle_rookie_review/node_modules/.bin/next:6:1)
+0|waffle_r |     at Module._compile (node:internal/modules/cjs/loader:1554:14)
+0|waffle_r |     at Object..js (node:internal/modules/cjs/loader:1706:10)
+0|waffle_r |     at Module.load (node:internal/modules/cjs/loader:1289:32) {
+0|waffle_r |   code: 'MODULE_NOT_FOUND',
+0|waffle_r |   requireStack: [ '/home/ubuntu/waffle_rookie_review/node_modules/.bin/next' ]
+0|waffle_r | }
+0|waffle_r |
+0|waffle_r | Node.js v22.14.0
+0|waffle_r | error: script "start" exited with code 1
+0|waffle_r | $ next start
+```
+
+이런 식으로 node.js의 모듈을 찾을 수 없다고 나타났다. 처음에는
+'아, pm2가 node.js 환경을 필요로 했었지. 그런데 버전이 22.14네. 뭐야! deploy.yml에는 20.11.1 버전으로 빌드하잖아.'
+하고 곧장 인스턴스의 node.js 버전을 20.11.1로 지정했다.
+
+그런데도 여전히 문제가 있었다.
+
+프로젝트 루트 디렉토리에서 bun install을 한 뒤 pm2 restart 0으로 애플리케이션을 다시 실행하면 정상 작동되었다. 그럼 의존성 문제인가? 싶은데 node.js 버전을 이야기하고... 하다가 순간 아차 싶었다. 내 런타임 환경은 Bun인데!! interpreter를 bun 경로로 지정해 주니 말끔하게 다시 작동했다.
+
+지나고 보면 너무 당연하고 쉬운 문제인데... 왜 이렇게 오래 돌아갔을까. 그래도 기가막히게 실수하고 시간 낭비하며 제대로 깨우쳤다. 내가 정확히 무슨 환경에서 어떤 명령어로 무엇을 작동시키는지 알게 되었음! 지금처럼 직접 서버까지 건드려보고 시행착오한 뒤에 토이프로젝트를 했으면 훨씬 잘 참여할 수 있었을텐데. 문제가 발생하면 이게 서버쪽 문제인지 프론트쪽 문제인지 알아보려는 노력이라도 할 수 있었을텐데.
+
+그래도 억지로 Bun을 써보며 부딪힌 게 참 잘한 선택인 듯했다. 이게 아니었다면 서버쪽이 어떤 방식으로 돌아가는지 이해하게 만들어준 에러들을 못 만났을테니!
+
+---
+
+이후로 도메인 구매해서 연결하고 https 접속 연결하기... 는 간단할 듯하고 Docker를 한 번 써볼 생각인데, 그 전에 기능을 몇 개 개발한 뒤에 할 생각이다. 간단한 블로그를 구축해보고 싶은데 시간이 되려나 모르겠네.

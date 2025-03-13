@@ -1,3 +1,4 @@
+import { MDXContent } from '@/mdx-components';
 import { Post } from '@/utils/post';
 
 type Props = {
@@ -9,7 +10,7 @@ const PostPageLayout = (props: Props) => {
     <div className="flex flex-col mt-5 gap-10">
       <h1 className="text-4xl font-black whitespace-pre-wrap">{props.post.title}</h1>
       <div className="prose max-w-full">
-        <props.post.content />
+        <MDXContent code={props.post.content} />
       </div>
     </div>
   );

@@ -1,16 +1,11 @@
-<<<<<<< Updated upstream
 import { cn } from '@/utils/cn';
 
-interface PageLayoutProps {
-=======
 type PageLayoutProps = {
->>>>>>> Stashed changes
   children: React.ReactNode;
   title?: string;
   description?: string;
   className?: string;
-<<<<<<< Updated upstream
-}
+};
 
 export default function PageLayout({ children, title, description, className }: PageLayoutProps) {
   return (
@@ -23,31 +18,7 @@ export default function PageLayout({ children, title, description, className }: 
           {description && <span className="text-primary text-xl">{description}</span>}
         </div>
       )}
-
       {children}
     </div>
   );
 }
-=======
-};
-
-export const PageLayout = ({ children, title, description, className }: PageLayoutProps) => {
-  
-  return (
-    <div>
-      {(title || description) && (
-        <div>
-          {title && (
-            <h1>{title.toUpperCase()}</h1>
-          )}
-          {description && (
-            <span>{description}</span>
-          )}
-        </div>
-      )}
-      
-      {children}
-    </div>
-  )
-};
->>>>>>> Stashed changes
