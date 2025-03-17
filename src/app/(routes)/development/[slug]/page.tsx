@@ -7,13 +7,11 @@ import { Metadata } from 'next';
 import metadata from '@/utils/metadata';
 
 type Props = {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: { slug: string };
 };
 
-export default async function DevelopmentPage({ params }: Props) {
-  const { slug } = await params;
+export default function DevelopmentPage({ params }: Props) {
+  const { slug } = params;
   const post = getPostBySlug({ slug: slug, category: 'development' });
 
   if (!post) {
