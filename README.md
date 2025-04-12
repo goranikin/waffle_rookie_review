@@ -1,6 +1,6 @@
 # My review repository for Rookie and Toy project at Waffle Studio
 
-## This repository is deprecated. I preserve this just for archiving and blog is maintained !(here)[https://github.com/goranikin/hyeok-blog]
+## This repository is deprecated. I preserve this just for archiving and blog is maintained at https://github.com/goranikin/hyeok-blog
 
 1: setup dev environment https://hyeokrani.tistory.com/112  
 2: setup supabase and test fetch data https://hyeokrani.tistory.com/113  
